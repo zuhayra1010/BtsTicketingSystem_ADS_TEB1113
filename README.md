@@ -1,57 +1,47 @@
-# BtsTicketingSystem_ADS_TEB1113
 # 🎫 BTS Ticketing System – Reducing Long Wait Times and Server Crashes During High-Demand Ticket Sales
 
-https://img.shields.io/badge/Python-3.10+-blue
-https://img.shields.io/badge/Data%20Structure-Queue-green
-https://img.shields.io/badge/Algorithms%20Analysis-Orange
-https://img.shields.io/badge/TEB1113-ADS-red
+## 📖 Overview
 
----
+This project was developed for the **TEB1113 Algorithm and Data Structure** course.
 
-# 📖 Project Overview
+The project simulates a real-world BTS concert ticket sale where a massive number of fans attempt to purchase tickets simultaneously when ticket sales open.
 
-This project was developed as part of the **TEB1113 Algorithm and Data Structure** course.
-
-The system simulates a real-world online ticketing scenario where a highly popular BTS concert opens ticket sales and thousands of fans attempt to purchase tickets at the same moment. Such situations commonly lead to long waiting times, overloaded servers, and website crashes.
-
-To study this problem, we designed and compared two ticket allocation approaches:
+The purpose of this project is to compare two different ticket allocation approaches:
 
 1. **Baseline Ticketing System**
-   - No traffic management
-   - Linear search seat allocation
-   - High computational cost
+   - No traffic control mechanism.
+   - All users access the system simultaneously.
+   - Seat allocation uses Linear Search.
 
 2. **Optimized Ticketing System**
-   - FIFO Queue implementation
-   - Direct seat allocation using an index pointer
-   - Significantly improved system performance
+   - Uses a Queue (FIFO) as a virtual waiting room.
+   - Users are processed sequentially.
+   - Seat allocation uses a direct index pointer.
 
-The goal of this project is to demonstrate how selecting an appropriate data structure can improve scalability, fairness, and efficiency during high-demand ticket sales.
+The comparison demonstrates how selecting the correct data structure can significantly improve system efficiency, fairness, and scalability during high-demand ticket sales.
 
 ---
 
-# 🎯 Problem Statement
+# 🎯 Problem Scenario
 
-When ticket sales open for a BTS concert, thousands of users attempt to access the ticketing platform simultaneously.
+A BTS concert ticket sale opens and receives an extremely high volume of requests.
 
-For this project, the following scenario is simulated:
+### Simulation Configuration
 
 | Parameter | Value |
-|------------|---------|
+|------------|----------|
 | Total Users | 10,000 |
-| Available Seats | 5,000 |
-| Event | BTS Concert Ticket Sale |
-| System Type | Online Ticketing Platform |
+| Total Seats | 5,000 |
+| Event | BTS Concert |
+| Booking Type | Online Ticketing System |
 
-Without traffic control, every user request reaches the server at the same time. The server must repeatedly search through seat records to find available seats, resulting in:
+Challenges encountered during high-demand sales:
 
 - Long waiting times
-- Increased CPU usage
-- High memory consumption
-- System instability
-- Potential server crashes
-
-To address these issues, an optimized queue-based solution is introduced.
+- Server overload
+- High CPU utilization
+- Poor user experience
+- Potential system crashes
 
 ---
 
@@ -63,203 +53,228 @@ bts-ticketing-system/
 ├── README.md
 │
 ├── baseline/
-│   └── baseline_ticketing.py
+│   └── baseline_ticketing.cpp
 │
 ├── optimized/
-│   └── optimized_ticketing.py
+│   └── optimized_ticketing.cpp
 │
 └── benchmark/
-    └── compare_results.py
+    └── compare_results.cpp
 ```
 
 ---
 
-# 🏗️ System Architecture
+# 🏗️ System Design
 
-## Baseline System
+## 1️⃣ Baseline Ticketing System
 
-The baseline system allows all users to access the ticketing server simultaneously.
+### Description
 
-For every incoming request:
+The baseline system represents a traditional ticketing platform without any traffic management mechanism.
 
-1. The system begins searching from Seat 0.
-2. The seats array is checked one-by-one.
-3. The first available seat is allocated.
-4. The search stops and proceeds to the next user.
+When ticket sales begin:
 
-### Baseline Characteristics
+- All 10,000 users access the system simultaneously.
+- Every user performs a Linear Search through the seats array.
+- The search starts from Seat 0 every time.
+- The first available seat is allocated.
+- If no seat is found, the user receives a "Sold Out" message.
 
-| Feature | Baseline |
-|----------|----------|
-| Traffic Control | ❌ No |
-| Queue Support | ❌ No |
-| Waiting Room | ❌ No |
-| Seat Allocation | Linear Search |
-| Fairness | Low |
-| Scalability | Poor |
-| Server Stability | Low |
+### Data Structures Used
+
+| Data Structure | Purpose |
+|---------------|---------|
+| Vector\<Seat\> | Store seat information |
+| Vector\<User\> | Store user information |
+
+### Baseline Booking Process
+
+```text
+User Arrives
+      ↓
+Search Seat Array From Index 0
+      ↓
+Seat Found?
+   ↓       ↓
+ Yes       No
+ ↓          ↓
+Book Seat   Sold Out
+```
+
+### Advantages
+
+✅ Easy to implement
+
+✅ Low memory usage
+
+### Disadvantages
+
+❌ Slow seat allocation
+
+❌ Large number of search operations
+
+❌ Does not scale well under heavy traffic
+
+❌ Higher risk of server overload
 
 ---
 
-## Optimized System
+## 2️⃣ Optimized Ticketing System
 
-The optimized system introduces a FIFO (First-In, First-Out) queue acting as a virtual waiting room.
+### Description
 
-Instead of allowing all users to access the server simultaneously:
+The optimized version introduces a Queue (FIFO) to act as a virtual waiting room.
 
-1. User requests enter a queue.
-2. Requests are processed according to arrival order.
-3. Seats are assigned using a direct index pointer (`nextAvailableSeatIndex`).
-4. No linear search is performed.
+Instead of allowing all users to access the seat allocation system simultaneously:
 
-### Optimized Characteristics
+1. Users enter a queue.
+2. Requests are processed in arrival order.
+3. Seats are allocated using a pointer called:
 
-| Feature | Optimized |
-|----------|-----------|
-| Traffic Control | ✅ Yes |
-| Queue Support | ✅ Yes |
-| Waiting Room | ✅ Yes |
-| Seat Allocation | Direct Indexing |
-| Fairness | High |
-| Scalability | Excellent |
-| Server Stability | High |
+```cpp
+nextAvailableSeatIndex
+```
+
+4. No linear search is required.
+
+### Data Structures Used
+
+| Data Structure | Purpose |
+|---------------|---------|
+| Queue\<User\> | Manage waiting users |
+| Vector\<Seat\> | Store seat information |
+| Vector\<User\> | Track booking status |
+
+### Optimized Booking Process
+
+```text
+User Arrives
+      ↓
+Enter Queue
+      ↓
+Dequeue User
+      ↓
+Assign Seat Using Index Pointer
+      ↓
+Booking Completed
+```
+
+### Advantages
+
+✅ Faster processing
+
+✅ Fair ticket allocation
+
+✅ Lower server workload
+
+✅ Prevents traffic spikes
+
+✅ Better scalability
+
+### Disadvantages
+
+❌ Requires additional memory for queue storage
 
 ---
 
 # ⚙️ Technologies Used
 
-| Component | Technology |
-|------------|------------|
-| Language | Python 3 |
-| Data Structure | Queue |
-| Seat Storage | Array/List |
-| Performance Measurement | time.perf_counter() |
-| Version Control | Git |
-| Repository Hosting | GitHub |
+| Technology | Purpose |
+|------------|---------|
+| C++ | System Development |
+| STL Vector | Dynamic Seat & User Storage |
+| STL Queue | Waiting Room Implementation |
+| Git | Version Control |
+| GitHub | Source Code Repository |
 
 ---
 
-# 🚀 Installation
-
-Clone the repository:
-
-```bash
-git clone https://github.com/yourusername/bts-ticketing-system.git
-```
-
-Navigate into the project folder:
-
-```bash
-cd bts-ticketing-system
-```
-
-Check Python version:
-
-```bash
-python --version
-```
-
-Recommended:
-
-```text
-Python 3.10+
-```
-
-No external libraries are required.
-
----
-
-# ▶️ Running the Baseline System
-
-From the project root directory:
-
-```bash
-python baseline/baseline_ticketing.py
-```
-
-or
-
-```bash
-cd baseline
-python baseline_ticketing.py
-```
-
----
-
-# ▶️ Running the Optimized System
-
-```bash
-python optimized/optimized_ticketing.py
-```
-
----
-
-# ▶️ Running the Benchmark Comparison
-
-```bash
-python benchmark/compare_results.py
-```
-
-The benchmark script executes both systems and compares:
-
-- Execution Time
-- Number of Operations
-- Successful Bookings
-- Failed Bookings
-- Overall Performance
-
----
-
-# 📊 Sample Output
+# 🚀 Compilation & Execution
 
 ## Baseline System
 
-```text
-==================================================
-BASELINE TICKETING SYSTEM
-==================================================
-Total Seats           : 5000
-Total Users           : 10000
-Tickets Assigned      : 5000
-Failed Requests       : 5000
-Comparisons           : 37502500
-Execution Time        : 1.287423 seconds
-==================================================
+Navigate to the baseline folder:
+
+```bash
+cd baseline
+```
+
+Compile:
+
+```bash
+g++ baseline_ticketing.cpp -o baseline
+```
+
+Run:
+
+```bash
+./baseline
 ```
 
 ---
 
 ## Optimized System
 
-```text
-==================================================
-OPTIMIZED TICKETING SYSTEM
-==================================================
-Total Seats           : 5000
-Total Users           : 10000
-Tickets Assigned      : 5000
-Failed Requests       : 5000
-Operations            : 10000
-Execution Time        : 0.009812 seconds
-==================================================
+Navigate to the optimized folder:
+
+```bash
+cd optimized
+```
+
+Compile:
+
+```bash
+g++ optimized_ticketing.cpp -o optimized
+```
+
+Run:
+
+```bash
+./optimized
 ```
 
 ---
 
-# 📈 Performance Comparison
+# 📊 Example Output
 
-| Metric | Baseline System | Optimized System |
-|----------|----------------|------------------|
-| Total Users | 10,000 | 10,000 |
-| Total Seats | 5,000 | 5,000 |
-| Seat Allocation Method | Linear Search | Direct Index |
-| Queue Used | ❌ No | ✅ Yes |
+## Baseline Output
+
+```text
+--- Baseline Simulation Results ---
+
+Total Requests Processed : 10000
+Successful Bookings      : 5000
+Failed / Sold Out        : 5000
+```
+
+---
+
+## Optimized Output
+
+```text
+===== Optimized Ticketing System Results =====
+
+Total Users: 10000
+Total Seats: 5000
+Tickets Booked (SUCCESS): 5000
+Tickets Failed (SOLD OUT): 5000
+Final nextAvailableSeatIndex: 5000
+```
+
+---
+
+# 📈 Feature Comparison
+
+| Feature | Baseline | Optimized |
+|----------|----------|----------|
+| Traffic Control | ❌ No | ✅ Yes |
+| Queue Support | ❌ No | ✅ Yes |
 | Waiting Room | ❌ No | ✅ Yes |
-| Search Operations | ~37,500,000 | ~10,000 |
-| Server Load | Very High | Low |
+| Linear Search | ✅ Yes | ❌ No |
+| Direct Seat Allocation | ❌ No | ✅ Yes |
 | Fairness | Low | High |
 | Scalability | Poor | Excellent |
-| Disaster Risk | High | Low |
+| Server Stability | Low | High |
 
 ---
 
@@ -278,22 +293,17 @@ Where:
 - N = Number of Users
 - M = Number of Seats
 
-Every user potentially performs a search through the entire seat array.
+Reason:
 
-For:
+- Outer loop iterates through all users.
+- Inner loop performs Linear Search through seats.
 
-```text
-10,000 Users
-5,000 Seats
-```
-
-The system performs approximately:
+Worst-case:
 
 ```text
-37,502,500 comparisons
+10,000 Users × 5,000 Seats
+≈ 50,000,000 operations
 ```
-
-This creates significant processing overhead and increases the likelihood of server crashes during peak traffic.
 
 ### Space Complexity
 
@@ -301,7 +311,7 @@ This creates significant processing overhead and increases the likelihood of ser
 O(1)
 ```
 
-Only a small fixed number of additional variables is required.
+No additional data structure grows with input size.
 
 ---
 
@@ -313,13 +323,13 @@ Only a small fixed number of additional variables is required.
 O(N)
 ```
 
-Each user is:
+Reason:
 
-1. Enqueued once
-2. Dequeued once
-3. Assigned a seat immediately
+- Users are enqueued once.
+- Users are dequeued once.
+- Seat assignment uses direct indexing.
 
-All operations execute in constant time.
+No nested search loop exists.
 
 ### Space Complexity
 
@@ -327,43 +337,46 @@ All operations execute in constant time.
 O(N)
 ```
 
-The queue stores incoming user requests while they wait to be processed.
+The queue stores incoming user requests before they are processed.
 
 ---
 
-# ✅ Key Improvements Achieved
+# 📌 Why Queue Was Chosen
 
-| Improvement | Baseline | Optimized |
-|------------|----------|-----------|
-| Traffic Regulation | ❌ | ✅ |
-| Fair Ticket Distribution | ❌ | ✅ |
-| Server Crash Prevention | ❌ | ✅ |
-| Waiting Room Support | ❌ | ✅ |
-| Fast Seat Assignment | ❌ | ✅ |
-| Scalable to High Demand | ❌ | ✅ |
+Queue follows the **FIFO (First-In, First-Out)** principle.
+
+Benefits include:
+
+- Fair ticket distribution
+- Controlled traffic flow
+- Reduced server load
+- Better user experience
+- Predictable waiting order
+- Prevention of sudden traffic spikes
+
+This makes Queue the most suitable data structure for handling BTS concert ticket sales.
 
 ---
 
 # 🎓 Learning Outcomes
 
-Through this project, we gained practical experience in:
+Through this project, we learned:
 
-- Queue Data Structures
-- Algorithm Design
-- Computational Complexity Analysis
-- Performance Benchmarking
-- System Optimization Techniques
-- Big-O Analysis
-- Real-World Application of Data Structures
-
-We also demonstrated how an optimized Queue-based solution can significantly outperform a traditional linear-search ticketing system under high-demand conditions.
+- Data Structure Selection
+- Queue Implementation
+- Linear Search Analysis
+- Algorithm Optimization
+- Time Complexity Analysis
+- Space Complexity Analysis
+- Real-World Application of Algorithms
+- Performance Comparison Techniques
 
 ---
 
 # 👥 Project Members
 
 | No. | Name | Student ID |
-|------|--------|-----------|
+|------|------|------------|
 | 1 | Tuan Nur Afifah Khaira Zulfa binti Tuan Zaki | 24006290 |
 | 2 | Farhana binti Yakmin Zada | 24006288 |
 | 3 | Nur Insyirah Binti Zaini | 24005781 |
@@ -374,7 +387,7 @@ We also demonstrated how an optimized Queue-based solution can significantly out
 # 📚 Course Information
 
 | Item | Details |
-|---------|---------|
+|--------|----------|
 | Faculty | Faculty of Science and Information Technology |
 | Department | Computer Information Sciences |
 | Programme | Bachelor of Computer Science (Hons) |
@@ -386,6 +399,6 @@ We also demonstrated how an optimized Queue-based solution can significantly out
 
 # 📝 License
 
-This repository was developed for educational purposes as part of the TEB1113 Algorithm and Data Structure coursework.
+This repository is submitted for academic purposes as part of the TEB1113 Algorithm and Data Structure coursework.
 
 © 2026 BTS Ticketing System Project Team
