@@ -57,9 +57,6 @@ bts-ticketing-system/
 │
 ├── optimized/
 │   └── optimized_ticketing.cpp
-│
-└── benchmark/
-    └── compare_results.cpp
 ```
 
 ---
