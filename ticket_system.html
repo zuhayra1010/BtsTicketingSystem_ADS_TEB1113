@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ticketing Surge Simulator — Baseline vs Optimized</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:            #0F0D14;
+    --surface:       #1A1721;
+    --surface-2:     #221D2C;
+    --line:          #322C3D;
+    --text:          #F2EEF7;
+    --text-muted:    #948DA3;
+    --gold:          #FFC145;   /* ticket-stub gold — optimized lane */
+    --pink:          #FF2E7E;   /* stage-light pink — accent / CTA */
+    --red-dim:       #8A4A5C;   /* baseline lane, deliberately dimmer */
+    --success:       #55D6A6;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(255,46,126,0.10), transparent 40%),
+      radial-gradient(circle at 85% 10%, rgba(255,193,69,0.08), transparent 40%);
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 48px 24px 80px; }
+
+  /* ---------- Marquee header ---------- */
+  header { text-align: center; margin-bottom: 44px; }
+
+  /* BTS Logo Styling */
+  .bts-logo-svg {
+    display: block;
+    margin: 0 auto 20px;
+    width: 60px;
+    height: auto;
+    filter: drop-shadow(0 0 12px rgba(255, 46, 126, 0.4));
+  }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--pink);
+    margin-bottom: 14px;
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(42px, 8vw, 84px);
+    line-height: 0.95;
+    letter-spacing: 0.02em;
+    margin: 0 0 12px;
+    background: linear-gradient(180deg, #FFFFFF 0%, #D8CFE8 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .sub {
+    color: var(--text-muted);
+    font-size: 15px;
+    max-width: 560px;
+    margin: 0 auto;
+  }
+
+  /* ---------- Control panel ---------- */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: end;
+    justify-content: center;
+    margin-bottom: 40px;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 8px; min-width: 160px; }
+
+  .field label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .field input {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    padding: 10px 12px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+  .field input:focus { border-color: var(--pink); }
+
+  button#runBtn {
+    background: var(--pink);
+    color: #1a0511;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 0.06em;
+    padding: 13px 30px;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    box-shadow: 0 0 0 rgba(255,46,126,0);
+  }
+  button#runBtn:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(255,46,126,0.35); }
+  button#runBtn:active { transform: translateY(0); }
+  button#runBtn:disabled { opacity: 0.5; cursor: wait; transform: none; box-shadow: none; }
+
+  #statusLine {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-muted);
+    min-height: 20px;
+    margin-bottom: 28px;
+  }
+
+  /* ---------- Ticket-stub divider between the two lanes ---------- */
+  .lanes {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  @media (max-width: 780px) {
+    .lanes { grid-template-columns: 1fr; }
+    .perforation { display: none; }
+  }
+
+  .lane { padding: 28px 26px 30px; position: relative; }
+  .lane.baseline  { border-right: 1px dashed var(--line); }
+
+  .perforation {
+    position: absolute;
+    top: 0; bottom: 0; left: 50%;
+    width: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .perforation::before {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; left: -1px;
+    width: 2px;
+    background-image: radial-gradient(circle, var(--bg) 3px, transparent 3.5px);
+    background-size: 14px 20px;
+    background-repeat: repeat-y;
+  }
+
+  .lane-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .lane.baseline .lane-label  { color: var(--red-dim); }
+  .lane.optimized .lane-label { color: var(--gold); }
+
+  .lane-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 30px;
+    letter-spacing: 0.01em;
+    margin: 0 0 4px;
+  }
+  .lane-complexity {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 18px;
+  }
+
+  /* seat grid visualization */
+  canvas.seatgrid {
+    display: block;
+    width: 100%;
+    height: 130px;
+    border-radius: 8px;
+    background: var(--bg);
+    margin-bottom: 18px;
+    border: 1px solid var(--line);
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .stat-row:last-child { border-bottom: none; }
+
+  .stat-label {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 17px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .lane.optimized .stat-value.highlight { color: var(--gold); }
+  .lane.baseline .stat-value.highlight  { color: var(--red-dim); }
+  .stat-value.fail { color: #FF6B87; }
+  .stat-value.success { color: var(--success); }
+
+  /* ---------- Verdict strip ---------- */
+  .verdict {
+    margin-top: 28px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.9;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .verdict.show { opacity: 1; }
+  .verdict strong { color: var(--gold); font-weight: 700; }
+
+  footer {
+    text-align: center;
+    margin-top: 56px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <!-- Embedded crisp vector BTS Logo -->
+    <svg class="bts-logo-svg" viewBox="0 0 100 135" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0 0L46 19.5V115.5L0 135V0Z" fill="white"/>
+      <path d="M100 0L54 19.5V115.5L100 135V0Z" fill="white"/>
+    </svg>
+
+    <div class="eyebrow">Interface & Logic: Client-Side Browser JS</div>
+    <h1>TICKETING SURGE<br>SIMULATOR</h1>
+    <p class="sub">A BTS concert on-sale, simulated twice: once against an unmanaged
+      booking server, once against a FIFO queue with a direct seat pointer.
+      All logic runs directly inside your browser!</p>
+  </header>
+
+  <div class="panel">
+    <div class="field">
+      <label for="usersInput">Incoming Requests (N)</label>
+      <input type="number" id="usersInput" value="10000" min="1" max="200000" step="500">
+    </div>
+    <div class="field">
+      <label for="seatsInput">Available Seats (M)</label>
+      <input type="number" id="seatsInput" value="5000" min="1" max="200000" step="250">
+    </div>
+    <button id="runBtn">RUN SIMULATION</button>
+  </div>
+
+  <div id="statusLine">Ready to simulate in-browser.</div>
+
+  <div class="lanes">
+    <div class="perforation"></div>
+
+    <div class="lane baseline">
+      <div class="lane-label">Method 01</div>
+      <h2 class="lane-title">Baseline</h2>
+      <div class="lane-complexity" id="baselineComplexity">O(N × M) — linear search per user</div>
+      <canvas class="seatgrid" id="baselineCanvas"></canvas>
+      <div class="stat-row"><span class="stat-label">Booked</span><span class="stat-value success" id="baselineSuccess">—</span></div>
+      <div class="stat-row"><span class="stat-label">Sold out</span><span class="stat-value fail" id="baselineFailed">—</span></div>
+      <div class="stat-row"><span class="stat-label">Operations counted</span><span class="stat-value highlight" id="baselineOps">—</span></div>
+      <div class="stat-row"><span class="stat-label">Execution time</span><span class="stat-value" id="baselineTime">—</span></div>
+    </div>
+
+    <div class="lane optimized">
+      <div class="lane-label">Method 02</div>
+      <h2 class="lane-title">Optimized</h2>
+      <div class="lane-complexity" id="optimizedComplexity">O(N) — FIFO queue + index pointer</div>
+      <canvas class="seatgrid" id="optimizedCanvas"></canvas>
+      <div class="stat-row"><span class="stat-label">Booked</span><span class="stat-value success" id="optimizedSuccess">—</span></div>
+      <div class="stat-row"><span class="stat-label">Sold out</span><span class="stat-value fail" id="optimizedFailed">—</span></div>
+      <div class="stat-row"><span class="stat-label">Operations counted</span><span class="stat-value highlight" id="optimizedOps">—</span></div>
+      <div class="stat-row"><span class="stat-label">Execution time</span><span class="stat-value" id="optimizedTime">—</span></div>
+    </div>
+  </div>
+
+  <div class="verdict" id="verdict"></div>
+
+  <footer>CLIENT-SIDE JAVASCRIPT SIMULATION · NO SERVER REQUIRED</footer>
+</div>
+
+<script>
+const runBtn      = document.getElementById('runBtn');
+const statusLine  = document.getElementById('statusLine');
+const verdict     = document.getElementById('verdict');
+
+function fmt(n) { return Number(n).toLocaleString('en-US'); }
+
+function runBaselineSimulation(totalUsers, totalSeats) {
+  const seats = new Array(totalSeats).fill(true);
+  let operationCounter = 0;
+  let successfulBookings = 0;
+  let failedBookings = 0;
+
+  const startTime = performance.now();
+
+  for (let u = 0; u < totalUsers; u++) {
+    let seatFound = false;
+    for (let i = 0; i < seats.length; i++) {
+      operationCounter++;
+      if (seats[i]) {
+        seats[i] = false;
+        successfulBookings++;
+        seatFound = true;
+        break;
+      }
+    }
+    if (!seatFound) {
+      failedBookings++;
+    }
+  }
+
+  const endTime = performance.now();
+  return {
+    successfulBookings,
+    failedBookings,
+    operationCount: operationCounter,
+    executionTimeMs: endTime - startTime,
+    timeComplexity: `O(N x M) ~ ${fmt(totalUsers * totalSeats)} ops (theoretical max)`
+  };
+}
+
+function runOptimizedSimulation(totalUsers, totalSeats) {
+  let operationCounter = 0;
+  let successfulBookings = 0;
+  let failedBookings = 0;
+
+  const startTime = performance.now();
+
+  const userQueue = [];
+  for (let i = 0; i < totalUsers; i++) {
+    userQueue.push(i);
+    operationCounter++;
+  }
+
+  let nextAvailableSeatIndex = 0;
+  for (let i = 0; i < userQueue.length; i++) {
+    operationCounter++;
+    if (nextAvailableSeatIndex < totalSeats) {
+      nextAvailableSeatIndex++;
+      successfulBookings++;
+    } else {
+      failedBookings++;
+    }
+  }
+
+  const endTime = performance.now();
+  return {
+    successfulBookings,
+    failedBookings,
+    operationCount: operationCounter,
+    executionTimeMs: endTime - startTime,
+    timeComplexity: `O(N) ~ ${fmt(totalUsers)} ops`
+  };
+}
+
+function drawSeatGrid(canvas, totalSeats, bookedCount, mode, accentColor) {
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const cssWidth  = canvas.clientWidth;
+  const cssHeight = canvas.clientHeight;
+  canvas.width  = cssWidth * dpr;
+  canvas.height = cssHeight * dpr;
+  ctx.scale(dpr, dpr);
+
+  const displaySeats = Math.min(totalSeats, 5000);
+  const cols = Math.ceil(Math.sqrt(displaySeats * (cssWidth / cssHeight)));
+  const rows = Math.ceil(displaySeats / cols);
+  const cellW = cssWidth / cols;
+  const cellH = cssHeight / rows;
+  const bookedDisplay = Math.round((bookedCount / totalSeats) * displaySeats);
+
+  let frame = 0;
+  const totalFrames = 42;
+  const emptyColor = '#241F2C';
+
+  function render() {
+    ctx.clearRect(0, 0, cssWidth, cssHeight);
+    const progress = Math.min(1, frame / totalFrames);
+    const filledNow = Math.round(bookedDisplay * progress);
+
+    for (let i = 0; i < displaySeats; i++) {
+      const r = Math.floor(i / cols);
+      const c = i % cols;
+      const x = c * cellW + 1;
+      const y = r * cellH + 1;
+      const w = cellW - 2;
+      const h = cellH - 2;
+
+      let color = emptyColor;
+
+      if (mode === 'optimized') {
+        if (i < filledNow) color = accentColor;
+      } else {
+        if (i < filledNow) {
+          color = accentColor;
+        } else if (i < filledNow + 24 && progress < 1) {
+          color = Math.random() > 0.5 ? '#4A3040' : emptyColor;
+        }
+      }
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+    }
+
+    frame++;
+    if (frame <= totalFrames) requestAnimationFrame(render);
+  }
+  render();
+}
+
+function animateCount(el, target, suffix = '') {
+  const duration = 700;
+  const start = performance.now();
+  function step(now) {
+    const p = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmt(Math.round(target * eased)) + suffix;
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function runSimulation() {
+  const users = parseInt(document.getElementById('usersInput').value, 10) || 10000;
+  const seats = parseInt(document.getElementById('seatsInput').value, 10) || 5000;
+
+  runBtn.disabled = true;
+  statusLine.textContent = `Running simulation in browser for ${fmt(users)} requests against ${fmt(seats)} seats…`;
+  verdict.classList.remove('show');
+
+  setTimeout(() => {
+    const b = runBaselineSimulation(users, seats);
+    const o = runOptimizedSimulation(users, seats);
+
+    document.getElementById('baselineComplexity').textContent  = b.timeComplexity;
+    document.getElementById('optimizedComplexity').textContent = o.timeComplexity;
+
+    animateCount(document.getElementById('baselineSuccess'), b.successfulBookings);
+    animateCount(document.getElementById('baselineFailed'), b.failedBookings);
+    animateCount(document.getElementById('baselineOps'), b.operationCount);
+    document.getElementById('baselineTime').textContent = b.executionTimeMs.toFixed(3) + ' ms';
+
+    animateCount(document.getElementById('optimizedSuccess'), o.successfulBookings);
+    animateCount(document.getElementById('optimizedFailed'), o.failedBookings);
+    animateCount(document.getElementById('optimizedOps'), o.operationCount);
+    document.getElementById('optimizedTime').textContent = o.executionTimeMs.toFixed(3) + ' ms';
+
+    drawSeatGrid(document.getElementById('baselineCanvas'), seats, b.successfulBookings, 'baseline', '#8A4A5C');
+    drawSeatGrid(document.getElementById('optimizedCanvas'), seats, o.successfulBookings, 'optimized', '#FFC145');
+
+    const speedup = o.executionTimeMs > 0 ? (b.executionTimeMs / o.executionTimeMs) : 0;
+    const opReduction = 100 * (1 - (o.operationCount / b.operationCount));
+
+    verdict.innerHTML = `Optimized system ran <strong>${speedup.toFixed(1)}x faster</strong> in wall-clock time, ` +
+      `using <strong>${opReduction.toFixed(2)}% fewer</strong> counted operations ` +
+      `(${fmt(b.operationCount)} → ${fmt(o.operationCount)}).`;
+    verdict.classList.add('show');
+
+    statusLine.textContent = `Done — ${fmt(users)} requests processed against ${fmt(seats)} seats.`;
+    runBtn.disabled = false;
+  }, 50);
+}
+
+runBtn.addEventListener('click', runSimulation);
+window.addEventListener('load', runSimulation);
+</script>
+</body>
+</html>
