@@ -31,12 +31,12 @@
   }
 
   body {
-background-image:
-      radial-gradient(circle at 15% 0%, rgba(255,46,126,0.15), transparent 40%),
-      radial-gradient(circle at 85% 10%, rgba(255,193,69,0.12), transparent 40%),
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(255,46,126,0.15), transparent 60%),
+      radial-gradient(circle at 85% 10%, rgba(255,193,69,0.12), transparent 60%),
       linear-gradient(rgba(15, 13, 20, 0.85), rgba(15, 13, 20, 0.95)),
-      url('bts.jpg'); 
-      
+      url('bts.jpg');
+
     background-size: cover;
     background-position: center 20%;
     background-attachment: fixed;
@@ -47,7 +47,7 @@ background-image:
     -webkit-font-smoothing: antialiased;
   }
 
-  .wrap { max-width: 1180px; margin: 0 auto; padding: 48px 24px 80px; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 48px 24px 80px; position: relative; }
 
   /* ---------- Marquee header ---------- */
   header { text-align: center; margin-bottom: 44px; }
@@ -280,17 +280,17 @@ background-image:
     transition: opacity 0.2s ease;
     display: block;
   }
-  
+
   .golive-logo:hover {
     opacity: 0.8;
   }
-  
+
   .golive-logo img {
     height: 92px; /* Adjust this value to make your logo bigger or smaller */
     width: auto;
     display: block;
   }
-  
+
   @media (max-width: 780px) {
     .golive-logo {
       top: 16px;
@@ -300,23 +300,16 @@ background-image:
       height: 50px; /* Scales down slightly on mobile screens */
     }
   }
-  
+
 </style>
 </head>
 <body>
-  </head>
-<body>
-
-<!-- GoLive Logo placed here, OUTSIDE of the CSS -->
-<a href="#" class="golive-logo">
-  <img src="logo.png" alt="GoLive Logo">
-</a>
 
 <div class="wrap">
-  <header>
-    <!-- The rest of your simulator code... -->
 
-<div class="wrap">
+  <a href="#" class="golive-logo">
+    <img src="logo.png" alt="GoLive Logo">
+  </a>
 
   <header>
     <!-- Embedded crisp vector BTS Logo -->
@@ -325,9 +318,7 @@ background-image:
       <path d="M100 0L54 19.5V115.5L100 135V0Z" fill="white"/>
     </svg>
 
-    <div class="eyebrow">Interface & Logic: Client-Side Browser JS</div>
     <h1>TICKETING SURGE<br>SIMULATOR</h1>
-  
   </header>
 
   <div class="panel">
@@ -379,6 +370,8 @@ background-image:
 const runBtn      = document.getElementById('runBtn');
 const statusLine  = document.getElementById('statusLine');
 const verdict     = document.getElementById('verdict');
+
+let activeCountAnimations = new Map();
 
 function fmt(n) { return Number(n).toLocaleString('en-US'); }
 
@@ -472,7 +465,22 @@ function drawSeatGrid(canvas, totalSeats, bookedCount, mode, accentColor) {
 
   function render() {
     ctx.clearRect(0, 0, cssWidth, cssHeight);
-    const progress = Math.min(1, frame / totalFrames);
+
+    // 1. Set the frame limit FIRST. Optimized = 42 frames, Baseline = 105 frames.
+    const frameLimit = mode === 'optimized' ? totalFrames : totalFrames * 2.5;
+
+    // 2. Divide by the new frameLimit so the math stretches across the whole time
+    const linearProgress = Math.min(1, frame / frameLimit);
+
+    let progress;
+    if (mode === 'optimized') {
+      // Optimized fills at a steady, fast pace
+      progress = linearProgress;
+    } else {
+      // Baseline starts extremely fast, but chokes and slows down heavily at the end
+      progress = 1 - Math.pow(1 - linearProgress, 4);
+    }
+
     const filledNow = Math.round(bookedDisplay * progress);
 
     for (let i = 0; i < displaySeats; i++) {
@@ -490,8 +498,9 @@ function drawSeatGrid(canvas, totalSeats, bookedCount, mode, accentColor) {
       } else {
         if (i < filledNow) {
           color = accentColor;
-        } else if (i < filledNow + 24 && progress < 1) {
-          color = Math.random() > 0.5 ? '#4A3040' : emptyColor;
+        } else if (i === filledNow && progress < 1) {
+          // The white "Scan Head" showing the O(N x M) loop searching for a seat
+          color = '#FFFFFF';
         }
       }
       ctx.fillStyle = color;
@@ -499,21 +508,35 @@ function drawSeatGrid(canvas, totalSeats, bookedCount, mode, accentColor) {
     }
 
     frame++;
-    if (frame <= totalFrames) requestAnimationFrame(render);
+    // 3. Use the frameLimit we defined at the top
+    if (frame <= frameLimit) requestAnimationFrame(render);
   }
+
   render();
 }
 
 function animateCount(el, target, suffix = '') {
+  // Cancel any animation already running on this element so re-runs
+  // don't race and leave a stale/flickering number behind.
+  if (activeCountAnimations.has(el)) {
+    cancelAnimationFrame(activeCountAnimations.get(el));
+  }
+
   const duration = 700;
   const start = performance.now();
   function step(now) {
     const p = Math.min(1, (now - start) / duration);
     const eased = 1 - Math.pow(1 - p, 3);
     el.textContent = fmt(Math.round(target * eased)) + suffix;
-    if (p < 1) requestAnimationFrame(step);
+    if (p < 1) {
+      const id = requestAnimationFrame(step);
+      activeCountAnimations.set(el, id);
+    } else {
+      activeCountAnimations.delete(el);
+    }
   }
-  requestAnimationFrame(step);
+  const id = requestAnimationFrame(step);
+  activeCountAnimations.set(el, id);
 }
 
 function runSimulation() {
