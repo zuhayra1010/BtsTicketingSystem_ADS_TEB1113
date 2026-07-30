@@ -15,7 +15,7 @@
     --text:          #F2EEF7;
     --text-muted:    #948DA3;
     --gold:          #FFC145;   /* ticket-stub gold — optimized lane */
-    --pink:          #FF2E7E;   /* stage-light pink — accent / CTA */
+    --army-purple:   #D18EEF;   /* stage-light pink — accent / CTA */
     --red-dim:       #8A4A5C;   /* baseline lane, deliberately dimmer */
     --success:       #55D6A6;
   }
@@ -31,9 +31,23 @@
   }
 
   body {
+    <a href="#" class="golive-logo">
+  <img src="logo.png" alt="GoLive Logo">
+</a>
+  /* The layers stack from top to bottom. 
+       1 & 2: Your pink and gold stage lights
+       3: A dark overlay to ensure text stays readable
+       4: Your actual BTS background image */
     background-image:
-      radial-gradient(circle at 15% 0%, rgba(255,46,126,0.10), transparent 40%),
-      radial-gradient(circle at 85% 10%, rgba(255,193,69,0.08), transparent 40%);
+      radial-gradient(circle at 15% 0%, rgba(255,46,126,0.15), transparent 40%),
+      radial-gradient(circle at 85% 10%, rgba(255,193,69,0.12), transparent 40%),
+      linear-gradient(rgba(15, 13, 20, 0.85), rgba(15, 13, 20, 0.95)),
+      url('bts.jpg'); /* Replace with your image file name/path */
+      
+    background-size: cover;
+    background-position: center 20%;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
   }
 
   .wrap { max-width: 1180px; margin: 0 auto; padding: 48px 24px 80px; }
@@ -259,6 +273,37 @@
     color: var(--text-muted);
     letter-spacing: 0.05em;
   }
+
+  /* GoLive Upper-Left Logo (Image Version) */
+  .golive-logo {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    z-index: 100;
+    transition: opacity 0.2s ease;
+    display: block;
+  }
+  
+  .golive-logo:hover {
+    opacity: 0.8;
+  }
+  
+  .golive-logo img {
+    height: 32px; /* Adjust this value to make your logo bigger or smaller */
+    width: auto;
+    display: block;
+  }
+  
+  @media (max-width: 780px) {
+    .golive-logo {
+      top: 16px;
+      left: 16px;
+    }
+    .golive-logo img {
+      height: 24px; /* Scales down slightly on mobile screens */
+    }
+  }
+  
 </style>
 </head>
 <body>
